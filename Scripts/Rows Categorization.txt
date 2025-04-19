@@ -1,0 +1,97 @@
+/*
+===================================================================================================================
+  Script Name: Rows Categorization Logic 
+  Purpose: This script automatically categorizes rows based on two levels of logic:
+           1. **Absolute Match**: Transactions are first matched with exact category assignments (manual override).
+           2. **Pattern-Based Match**: If no absolute match is found, the script attempts to match
+              rows descriptions using predefined keyword patterns (LIKE matching).
+           The final result is a unified, clean category assigned to each row for downstream reporting.
+
+  Steps:
+    - Load predefined LIKE match patterns.
+    - Join exact (absolute) categories to the main fact table.
+    - Apply LIKE-based categorization for unmatched rows.
+    - Assign the final category
+    - Clean up temporary fields and tables.
+===================================================================================================================
+*/
+
+//======================================  Rows Categorization  ======================================
+
+//-------------------------------------- Step 0: Assume a Fact Table with key and description --------------------------------------
+
+F_Table:
+Load
+	ID,
+    Desc
+;
+SQL Select
+	ID,
+    Desc
+from YourTable;    
+
+//-------------------------------------- Step 1: Join transactions with absolute (manual) categories --------------------------------------
+LEFT JOIN (F_Table)
+LOAD
+    ID,
+    CatID      AS CatID_Absolute
+;
+SQL Select
+	ID,
+    CatID
+from YourTable;  
+
+//-------------------------------------- Step 2 : load LIKE-based automatic categorization patterns --------------------------------------
+Category_MatchPatterns:
+LOAD
+    Desc       AS MatchTextPattern,
+    CatID      AS CatID_LikeMatch
+;
+SQL Select
+	Desc,
+    CatID
+from YourMatchTable;  
+
+
+//-------------------------------------- Step 3: Assign LIKE-based categories where no absolute match exists --------------------------------------
+// Step 3.1: Loop over all match patterns to find transactions matching the pattern in their description
+// Only where no absolute ID found
+FOR EACH vMatchText IN FieldValueList('MatchTextPattern')
+    Temp_LikeMatchResults:
+    LOAD 
+        ID,
+        '$(vMatchText)' AS MatchTextPattern
+    RESIDENT F_Table
+    WHERE wildmatch(Desc, '*$(vMatchText)*') > 0 
+          AND IsNull(CatID_Absolute);
+NEXT
+
+// Step 3.2: Join LIKE match results back to the transaction table
+LEFT JOIN (F_Table)
+LOAD * 
+RESIDENT Temp_LikeMatchResults;
+
+// Step 3.3: Join category IDs corresponding to the LIKE matches
+LEFT JOIN (F_Table)
+LOAD * 
+RESIDENT Category_MatchPatterns;
+
+//-------------------------------------- Step 4: Derive final category, date key and clean up --------------------------------------
+
+LEFT JOIN (F_Table)
+LOAD 
+    ID,
+    IF(IsNull(CatID_Absolute), CatID_LikeMatch, CatID_Absolute)     AS FinalCategoryID
+RESIDENT F_Table;
+
+//-------------------------------------- Step 5: Cleanup of temporary fields and tables --------------------------------------
+
+DROP FIELDS 
+    CatID_Absolute, 
+    CatID_LikeMatch, 
+    MatchTextPattern
+FROM F_Table;
+
+DROP TABLES 
+    Temp_LikeMatchResults, 
+    Category_MatchPatterns;

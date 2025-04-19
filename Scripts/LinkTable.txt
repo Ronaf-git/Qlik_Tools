@@ -1,0 +1,104 @@
+Linktable:
+LOAD
+    lk_key,
+    entity_desc                                   AS lk_details,
+    Sum(transaction_amount)                       AS lk_value,
+    'Savings'                                     AS lk_AssetType,
+    'ALL'                                         AS lk_investedkey
+RESIDENT Source_Bank
+GROUP BY lk_key,entity_desc;
+
+CONCATENATE (Linktable)
+LOAD DISTINCT
+	lk_key,
+	entity_desc                                   AS lk_details,
+	Sum(current_position)							AS lk_value,
+	trade_date                                    AS lk_Calendar,
+    asset_type                                    AS lk_AssetType,
+    instrument_id                                 AS lk_investedkey
+RESIDENT Source_Trade
+GROUP BY trade_date,lk_key, entity_desc, asset_type, instrument_id;
+
+CONCATENATE (Linktable)
+LOAD DISTINCT
+    lk_key,
+    entity_desc                                   AS lk_details,
+    Sum(nav_value)                                AS lk_value,
+    'MutualFund'                                  AS lk_AssetType,
+    fund_id                                       AS lk_investedkey
+RESIDENT FundRegistry
+GROUP BY entity_desc,lk_key, fund_id;
+
+
+CONCATENATE (Linktable)
+LOAD DISTINCT
+    lk_key,
+    entity_desc                                   AS lk_details,
+    Sum(updated_value)                            AS lk_value,
+    property_type                                 AS lk_AssetType,
+    property_id                                   AS lk_investedkey
+RESIDENT RealEstate
+GROUP BY entity_desc,lk_key, property_type, property_id;
+
+
+CONCATENATE (Linktable)
+LOAD DISTINCT
+    lk_key,
+    entity_desc                                   AS lk_details,
+    Sum(outstanding_value)                        AS lk_value,
+    'P2PLoan'                                     AS lk_AssetType,
+    loan_id                                       AS lk_investedkey
+RESIDENT LoanPlatform
+GROUP BY entity_desc,lk_key, loan_id;
+
+
+CONCATENATE (Linktable)
+LOAD DISTINCT
+   	lk_key,
+    entity_desc                                   AS lk_details,
+    Sum(coin_value)                               AS lk_value,
+    'DigitalAsset'                                AS lk_AssetType,
+    wallet_id                                     AS lk_investedkey
+RESIDENT CryptoWallet
+GROUP BY entity_desc, lk_key, wallet_id;
+
+
+// ===========================================
+// === CLEAN UNUSED FIELDS FROM SOURCES =====
+// ===========================================
+
+DROP FIELDS 
+    entity_desc 
+FROM 
+    Source_Bank;
+
+DROP FIELDS 
+    trade_date,
+    entity_desc,
+    instrument_id 
+FROM 
+    Source_Trade;
+
+DROP FIELDS 
+    entity_desc,
+    fund_id 
+FROM 
+    FundRegistry;
+
+DROP FIELDS 
+    entity_desc,
+    property_id 
+FROM 
+    RealEstate;
+
+DROP FIELDS 
+    entity_desc,
+    loan_id 
+FROM 
+    LoanPlatform;
+
+DROP FIELDS 
+    entity_desc,
+    wallet_id 
+FROM 
+    CryptoWallet;
