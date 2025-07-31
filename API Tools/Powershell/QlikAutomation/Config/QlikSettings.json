@@ -1,0 +1,9 @@
+{
+  "QlikUrl": "ws://localhost:4848/app/",
+  "AppId": "Path\\to\\your\\file.qvf",
+  "CookieName": "X-Qlik-Session",
+  "FieldName": "YourFieldName",
+  "FieldValues":  ["Value1", "Value2", "Value3"],
+  "OutputDirectory": "Path\\to\\your\\folder",
+  "WriteHost": true
+}
