@@ -5,7 +5,8 @@
 .DESCRIPTION
     This script demonstrates how to:
     - Load config
-    - Connect to a Qlik Sense app
+    - Connect to a Qlik Sense session
+    - Open a Qlik Sense app
     - Reload the app
     - Save the app
     - Select values
@@ -32,28 +33,26 @@ if (-not $session) {
     exit 1
 }
 
-# Open and reload the app
-# Reload App
-$appHandle = Reload-QlikApp -Session $session -AppId $config.AppId -WriteHost $config.WriteHost
+# Open the Qlik app
+$appHandle = Get-QlikApp -Session $session -AppId $config.AppId -WriteHost $config.WriteHost
 if (-not $appHandle) {
-    Write-Error "Failed to open or reload app"
+    Write-Error "Failed to open the app"
     Close-WebSocket -client $session
     exit 1
 }
 
-# Open and save the app
+# Reload the app
+Reload-QlikApp -Session $session -appHandle $appHandle -WriteHost $config.WriteHost
+
+# Save the app
 # reload an app without saving it won't save datas into the qvf file
-$appHandle = Save-QlikApp -Session $session -AppId $config.AppId -WriteHost $config.WriteHost
-if (-not $appHandle) {
-    Write-Error "Failed to open or save app"
-    Close-WebSocket -client $session
-    exit 1
-}
+Save-QlikApp -Session $session -appHandle $appHandle -WriteHost $config.WriteHost
+
 
 # Select field and export data
 $OutputDirectory = $config.OutputDirectory
-if (-not (Test-Path $outputPath)) {
-    New-Item -Path $outputPath -ItemType Directory -Force | Out-Null
+if (-not (Test-Path $OutputDirectory)) {
+    New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
 }
 
 Export-QlikObject -Session $session `

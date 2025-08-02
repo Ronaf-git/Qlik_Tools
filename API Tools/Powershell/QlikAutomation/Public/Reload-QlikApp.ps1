@@ -1,11 +1,9 @@
 function Reload-QlikApp {
     param (
         [System.Net.WebSockets.ClientWebSocket]$Session,
-        [string]$AppId,
+        [string]$AppHandle,
         [bool]$WriteHost = $true
     )
 
-    $handle = Open-Document -ws $Session -appId $AppId 
-    Reload-App -ws $Session -appHandle $handle -WriteHost $WriteHost
-    return $handle
+    Reload-App -ws $Session -appHandle $AppHandle -WriteHost $WriteHost
 }

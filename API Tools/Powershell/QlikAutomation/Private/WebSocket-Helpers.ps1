@@ -18,6 +18,8 @@ function Connect-WebSocket {
         [string]$cookie      # Cookie for the request header (optional)
     )
 
+    Write-Host "$(Get-Timestamp) Try to connect to websocket ${URL}..." -ForegroundColor Cyan
+
     try {
         $client = [System.Net.WebSockets.ClientWebSocket]::new()
 
@@ -27,14 +29,13 @@ function Connect-WebSocket {
             $headers.SetRequestHeader("Cookie", $cookie)
         }
 
-        Write-Host "Tentative de connexion à $($URL.AbsoluteUri)..."
         $connectionTask = $client.ConnectAsync($URL, [System.Threading.CancellationToken]::None)
         $connectionTask.Wait()
 
         if ($client.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
-            Write-Host "Connexion WebSocket réussie."
+            Write-Host "$(Get-Timestamp) Connexion WebSocket Success." -ForegroundColor Green
         } else {
-            Write-Host "Échec de la connexion WebSocket."
+            Write-Host "$(Get-Timestamp) Connexion WebSocket Failed." -ForegroundColor Red
         }
 
         $origin = "$($URL.Scheme)://$($URL.Host)"
@@ -47,10 +48,10 @@ function Connect-WebSocket {
     catch {
     if ($_.Exception -is [AggregateException]) {
         $_.Exception.InnerExceptions | ForEach-Object {
-            Write-Error "WebSocket Error: $($_.ToString())"
+            Write-Error "$(Get-Timestamp) WebSocket Error: $($_.ToString())"
         }
     } else {
-        Write-Error "Erreur lors de la connexion WebSocket : $_"
+        Write-Error "$(Get-Timestamp) Error trying to connect to WebSocket : $_"
     }
 }
 }
@@ -116,18 +117,18 @@ function Close-WebSocket {
         try {
             # Close the WebSocket gracefully
             $client.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "Closing connection", [System.Threading.CancellationToken]::None).Wait()
-            Write-Host "WebSocket connection closed successfully."
+            Write-Host "$(Get-Timestamp) WebSocket connection closed successfully."
         }
         catch {
-            Write-Host "An error occurred while closing the WebSocket: $_" -ForegroundColor Red
+            Write-Host "$(Get-Timestamp) An error occurred while closing the WebSocket: $_" -ForegroundColor Red
         }
     } else {
-        Write-Host "WebSocket client is not connected or already closed."
+        Write-Host "$(Get-Timestamp) WebSocket client is not connected or already closed."
     }
 
     # Dispose the WebSocket client
     $client.Dispose()
-    Write-Host "WebSocket client disposed."
+    Write-Host "$(Get-Timestamp) WebSocket client disposed."
 }
 
 # -- Functions: Send and receive JSON over WebSocket --

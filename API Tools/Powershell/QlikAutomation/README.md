@@ -29,9 +29,12 @@ QlikAutomation/
 ├── Public/
 │   ├── Connect-QlikSession.ps1      # Authentication and session handling
 │   ├── Export-QlikObject.ps1        # Object selection/export logic
+│   ├── Get-QlikApp.ps1              # Get QlikApp
+│   ├── Save-QlikApp.ps1             # Save app change (new data)
 │   ├── Reload-QlikApp.ps1           # Reload app logic
 │   └── Select-QlikField.ps1         # Make field selections
-├── QlikAutomation.psm1              # Module manifest
+├── QlikAutomation.psd1              # Module manifest
+├── QlikAutomation.psm1              # Module load
 └── example.ps1                      # Examples of use
 ```
 
@@ -59,14 +62,15 @@ Import-Module .\QlikAutomation.psm1 -Force
 
 1. Load config from JSON (see below)
 2. Open WebSocket session to Qlik Engine
-3. Reload the app
-4. Save the app
-5. Loop through field values:
+3. Connect to a QlikApp
+4. Reload the app
+5. Save the app
+6. Loop through field values:
    - Select value
    - Iterate sheets and visualizations
    - Export each object’s data to Excel (`.xlsx`)
-6. Save files to `OutputDirectory`
-7. Close WebSocket session
+7. Save files to `OutputDirectory`
+8. Close WebSocket session
 
 ### Configuration of `Config/QlikSettings.json`
 

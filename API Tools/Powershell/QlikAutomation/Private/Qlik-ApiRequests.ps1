@@ -1,10 +1,12 @@
 function Open-Document {
     param (
         [System.Net.WebSockets.ClientWebSocket]$ws,
-        [string]$appId
+        [string]$appId,
+        [bool]$WriteHost = $true
     )
 
-    
+    Write-Host "$(Get-Timestamp) Try to open app ${appId}..." -ForegroundColor Cyan
+
     $request = @{
         jsonrpc = "2.0"
         method  = "OpenDoc"
@@ -12,30 +14,30 @@ function Open-Document {
         params  = @($appId)
         id      = (Get-NextRequestId)
     }
-    Send-JsonMessage -client $ws -json (ConvertTo-Json $request -Depth 10)
+    Send-JsonMessage -client $ws -json (ConvertTo-Json $request -Depth 10) -WriteHost $WriteHost
 
     while ($true) {
-        $responseText = Receive-JsonMessage -client $ws 
+        $responseText = Receive-JsonMessage -client $ws -WriteHost $WriteHost
+
         $response = $responseText | ConvertFrom-Json
 
         if ($response.id -eq $request.id) {
             $handle = $response.result.qReturn.qHandle
             break
         }
-        write-host "Listening"
+        write-host "$(Get-Timestamp) Listening"
         start-sleep -Seconds 1
     }
 
     if (-not $handle) {
-        Write-Host "Failed to open app."
+        Write-Host "$(Get-Timestamp) Failed to open app." -ForegroundColor Red
         exit
     }
 
-    Write-Host "Opened app with handle: $handle"
+    Write-Host "$(Get-Timestamp) Opened app with handle: $handle" -ForegroundColor Green
     return $handle
 
 }
-
 
 function Reload-App {
     param (
@@ -43,6 +45,8 @@ function Reload-App {
         [int]$appHandle,
         [bool]$WriteHost = $true
     )
+
+    Write-Host "$(Get-Timestamp) Try to Reload app ..." -ForegroundColor Cyan
 
     $request = @{
         jsonrpc = "2.0"
@@ -57,12 +61,10 @@ function Reload-App {
     }
 
     $response = Send-QlikRequest -client $ws -request $request -WriteHost $WriteHost
-
-    $response = Send-QlikRequest -client $ws -request $request -WriteHost $WriteHost
     if ($response.result.qReturn) {
-            Write-Host "$(Get-Timestamp) App Saved " -ForegroundColor Green
+            Write-Host "$(Get-Timestamp) App Reloaded " -ForegroundColor Green
     } else {
-            Write-Host "$(Get-Timestamp) ERROR App NOT Saved " -ForegroundColor Red
+            Write-Host "$(Get-Timestamp) ERROR App NOT Reloaded " -ForegroundColor Red
     }
 }
 
@@ -73,6 +75,8 @@ function Save-App {
         [bool]$WriteHost = $true
     )
 
+    Write-Host "$(Get-Timestamp) Try to Save app ..." -ForegroundColor Cyan
+
     $request = @{
         jsonrpc = "2.0"
         method  = "DoSave"
@@ -82,7 +86,7 @@ function Save-App {
     }
 
     $response = Send-QlikRequest -client $ws -request $request -WriteHost $WriteHost
-    if ($response.result.qReturn) {
+    if ($response.result) {
             Write-Host "$(Get-Timestamp) App Saved " -ForegroundColor Green
     } else {
             Write-Host "$(Get-Timestamp) ERROR App NOT Saved " -ForegroundColor Red
@@ -99,6 +103,9 @@ function Select-FieldValues {
         [bool]$WriteHost = $true
     )
     # STEP 1: Get the field object handle
+    
+    Write-Host "$(Get-Timestamp) Try to select ${fieldName} ..." -ForegroundColor Cyan
+
     $getFieldReq = @{
         jsonrpc = "2.0"
         method  = "GetField"
@@ -146,6 +153,7 @@ function Select-FieldValues {
         }
         id = (Get-NextRequestId)
     }
+    # 
 
     $response = Send-QlikRequest -client $client -request $selectReq -WriteHost $WriteHost
     if ($response.result) {
