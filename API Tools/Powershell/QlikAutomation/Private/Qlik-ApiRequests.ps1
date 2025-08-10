@@ -367,3 +367,102 @@ function Export-DataFromObject {
         return $null
     }
 }
+
+function Get-QlikAppScript {
+    param (
+        [System.Net.WebSockets.ClientWebSocket]$client,
+        [int]$appHandle,
+        [bool]$WriteHost = $true
+    )
+
+    Write-Host "$(Get-Timestamp) Retrieving load script..." -ForegroundColor Cyan
+
+    $request = @{
+        jsonrpc = "2.0"
+        id      = (Get-NextRequestId)
+        handle  = $appHandle
+        method  = "GetScript"
+        params  = @{}
+    }
+
+    $response = Send-QlikRequest -client $client -request $request -WriteHost $false
+
+    if ($response.result) {
+        $script = $response.result.qScript
+        Write-Host "$(Get-Timestamp) Script retrieved" -ForegroundColor Green
+        return $script
+        
+    } else {
+        Write-Host "$(Get-Timestamp) ERROR retrieving script" -ForegroundColor Red
+    }
+}
+
+
+function Get-QlikAppLayout {
+    param (
+        [System.Net.WebSockets.ClientWebSocket]$ws,
+        [int]$appHandle,
+        [bool]$WriteHost = $true
+    )
+
+    Write-Host "$(Get-Timestamp) Retrieving app layout…" -ForegroundColor Cyan
+
+    $request = @{
+        jsonrpc = "2.0"
+        id      = (Get-NextRequestId)
+        handle  = $appHandle
+        method  = "GetAppLayout"
+        params  = @()
+    }
+
+    $response = Send-QlikRequest -client $ws -request $request -WriteHost $WriteHost
+    if ($response.result) {
+        return $response
+        Write-Host "$(Get-Timestamp) App layout retrieved" -ForegroundColor Green
+    } else {
+        Write-Host "$(Get-Timestamp) ERROR retrieving App layout" -ForegroundColor Red
+    }
+
+}
+function Set-QlikAppScript {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.Net.WebSockets.ClientWebSocket]$client,
+
+        [Parameter(Mandatory = $true)]
+        [int]$appHandle,
+
+        [Parameter(Mandatory = $true)]
+        [string]$scriptText,
+
+        [bool]$WriteHost = $true
+    )
+
+    Write-Host "$(Get-Timestamp) Setting new Qlik script..." -ForegroundColor Cyan
+
+    $request = @{
+        jsonrpc = "2.0"
+        method  = "SetScript"
+        handle  = $appHandle
+        params  = @{
+            qScript = $scriptText
+        }
+        id = (Get-NextRequestId)
+    }
+
+    try {
+        $response = Send-QlikRequest -client $client -request $request -WriteHost $WriteHost
+
+        if ($response.result) {
+            Write-Host "$(Get-Timestamp) Script successfully set." -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "$(Get-Timestamp) ERROR: Script not set." -ForegroundColor Red
+            return $false
+        }
+    } catch {
+        Write-Host "$(Get-Timestamp) ERROR during SetScript: $_" -ForegroundColor Red
+        return $false
+    }
+}

@@ -7,6 +7,8 @@
     - Load config
     - Connect to a Qlik Sense session
     - Open a Qlik Sense app
+    - Get app information
+    - Get, download and update app script
     - Reload the app
     - Save the app
     - Select values
@@ -39,14 +41,37 @@ if (-not $appHandle) {
     Write-Error "Failed to open the app"
     Close-WebSocket -client $session
     exit 1
+} else {
+    Write-Host "App opened successfully: $appHandle" -ForegroundColor Green
 }
 
+# Get Various Information about the app
+## Get AppName
+$AppName = (Get-QlikAppLayout -ws $session -appHandle $appHandle -WriteHost $config.WriteHost).result.qLayout.qTitle | Format-Sanitize 
+
+
+# Get and download the app script
+$script = Get-QlikScript -Session $session `
+                   -AppHandle $appHandle `
+                   -OutputPath $OutputDirectory `
+                   -WriteHost $config.WriteHost
+# Download app script
+Set-Content -Path (Join-Path $OutputDirectory "${AppName}_$(Get-Date -Format 'yyyyMMdd').txt") -Value $script -Encoding UTF8
+
+# Modify and update the App Script
+$newScript = $script = $script -replace "// YourOldText", "// YourNewText" # works fine with regex
+Set-QlikScript -Session $session `
+                  -AppHandle $appHandle `
+                  -scriptText $newScript `
+                  -WriteHost $config.WriteHost
+                  
 # Reload the app
 Reload-QlikApp -Session $session -appHandle $appHandle -WriteHost $config.WriteHost
 
 # Save the app
-# reload an app without saving it won't save datas into the qvf file
+# reload/modifying script (in) an app without saving it won't save datas into the qvf file
 Save-QlikApp -Session $session -appHandle $appHandle -WriteHost $config.WriteHost
+
 
 
 # Select field and export data
@@ -54,7 +79,6 @@ $OutputDirectory = $config.OutputDirectory
 if (-not (Test-Path $OutputDirectory)) {
     New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
 }
-
 Export-QlikObject -Session $session `
                   -AppHandle $appHandle `
                   -FieldName $config.FieldName `

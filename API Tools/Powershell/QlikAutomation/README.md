@@ -13,6 +13,8 @@ This PowerShell module automates interactions with **Qlik Sense** via WebSocket 
 - 📊 Export object/sheet data (OOXML, CSV, etc.)
 - 🧱 Discover app layout and object metadata
 - 🧼 Automatic filename sanitization for safe file exports
+- 📜 Download app load script  
+- ✍️ Upload/update app load script  
 
 ---
 
@@ -30,8 +32,10 @@ QlikAutomation/
 │   ├── Connect-QlikSession.ps1      # Authentication and session handling
 │   ├── Export-QlikObject.ps1        # Object selection/export logic
 │   ├── Get-QlikApp.ps1              # Get QlikApp
-│   ├── Save-QlikApp.ps1             # Save app change (new data)
+│   ├── Get-QlikScript.ps1           # Get QlikScript
+│   ├── Save-QlikApp.ps1             # Save app change (new data/new script/new viz/...)
 │   ├── Reload-QlikApp.ps1           # Reload app logic
+│   ├── Set-QlikScript.ps1           # Set QlikScript (without saving)
 │   └── Select-QlikField.ps1         # Make field selections
 ├── QlikAutomation.psd1              # Module manifest
 ├── QlikAutomation.psm1              # Module load
@@ -50,8 +54,17 @@ QlikAutomation/
 
 ## ▶️ Usage
 
-Import the module in your powershell script :
+To properly use the module, save the `QlikAutomation` folder inside one of your PowerShell module paths, for example:
+- Dedicated User : `C:\Users\<YourUsername>\Documents\WindowsPowerShell\Modules\QlikAutomation`
+- All users : `C:\Program Files\WindowsPowerShell\Modules\QlikAutomation`
 
+Then, in your PowerShell session or script, import the module by running:
+
+```powershell
+Import-Module QlikAutomation -Force
+```
+
+Or, if you are running your script directly from the `QlikAutomation` folder (regardless of its location) and want to import it by relative path, use:
 ```powershell
 Import-Module .\QlikAutomation.psm1 -Force
 ```
@@ -63,14 +76,17 @@ Import-Module .\QlikAutomation.psm1 -Force
 1. Load config from JSON (see below)
 2. Open WebSocket session to Qlik Engine
 3. Connect to a QlikApp
-4. Reload the app
-5. Save the app
-6. Loop through field values:
+4. Get various AppInfos
+5. Get AppScript
+6. Update AppScript
+7. Reload the app
+8. Save the app
+9. Loop through field values:
    - Select value
    - Iterate sheets and visualizations
    - Export each object’s data to Excel (`.xlsx`)
-7. Save files to `OutputDirectory`
-8. Close WebSocket session
+10. Save files to `OutputDirectory`
+11. Close WebSocket session
 
 ### Configuration of `Config/QlikSettings.json`
 

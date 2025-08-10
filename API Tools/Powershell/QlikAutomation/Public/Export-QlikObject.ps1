@@ -17,13 +17,19 @@ function Export-QlikObject {
             $sheetObj = Get-AppObject -ws $Session -appHandle $AppHandle -objectId $sheet.qId -WriteHost $WriteHost
             $sheetHandle = $sheetObj.result.qReturn.qHandle
 
+            $sheetID = $sheetObj.result.qReturn.qGenericId
+            Write-Host "$(Get-Timestamp) Processing sheet ${sheetID} " -ForegroundColor Magenta
+
             $children = (Get-ChildInfos -ws $Session -sheetHandle $sheetHandle -WriteHost $WriteHost).result.qInfos
 
             foreach ($child in $children) {
-                $obj = Get-AppObject -ws $Session -appHandle $AppHandle -objectId $child.qId  -WriteHost $WriteHost
+                $childqID = $child.qId
+                Write-Host "$(Get-Timestamp) Processing child ${childqID} " -ForegroundColor Magenta
+
+                $obj = Get-AppObject -ws $Session -appHandle $AppHandle -objectId $childqID  -WriteHost $WriteHost
                 $layout = Get-LayoutInfo -client $Session -objHandle $obj.result.qReturn.qHandle -WriteHost $false
                 $title = $layout.result.qLayout.title
-                $fileName = "$(Get-Date -Format 'yyyyMMdd')_$($child.qId)_${title}_${value}" | Format-Sanitize
+                $fileName = "$(Get-Date -Format 'yyyyMMdd')_${childqID}_${title}_${value}" | Format-Sanitize
                 $path = Join-Path $OutputDirectory "${fileName}.xlsx"
 
                 $export = Export-DataFromObject -client $Session -objHandle $obj.result.qReturn.qHandle -qFileType 'EXPORT_OOXML' -WriteHost $WriteHost
